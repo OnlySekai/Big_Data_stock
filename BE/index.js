@@ -52,10 +52,9 @@ const kafkaData = async () => {
             value,
             headers: message.headers,
           });
-          //TODO: xoa comment
-          // if (key === "newPrice") {
-          //   io.emit("newPrice", value);
-          // }
+          if (key === "newPrice") {
+            io.emit("newPrice", value);
+          }
         } catch (err) {
           console.log("something wrong in socket");
         }
@@ -73,21 +72,20 @@ const kafkaData = async () => {
             value: message.value.toString(),
             headers: message.headers,
           });
-          //TODO: Xoa comment
-          // const newPrice = JSON.parse(message.value.toString());
-          // if (
-          //   message.key.toString() != "newPrice" ||
-          //   !newPrice.symbol ||
-          //   !newPrice.price ||
-          //   !newPrice.time
-          // )
-          //   return;
-          // const { time, price, symbol } = newPrice;
-          // console.log(new Date(time).toISOString());
-          // await client.query(
-          //   `insert into stocks_real_time(symbol, price, time)
-        	// values ('${symbol}', ${price}, '${new Date(time).toISOString()}')`
-          // );
+          const newPrice = JSON.parse(message.value.toString());
+          if (
+            message.key.toString() != "newPrice" ||
+            !newPrice.symbol ||
+            !newPrice.price ||
+            !newPrice.time
+          )
+            return;
+          const { time, price, symbol } = newPrice;
+          console.log(new Date(time).toISOString());
+          await client.query(
+            `insert into stocks_real_time(symbol, price, time)
+        	values ('${symbol}', ${price}, '${new Date(time).toISOString()}')`
+          );
         } catch (err) {
           console.log(err);
           console.log("something wrong in db");
@@ -108,13 +106,7 @@ io.on("connection", (socket) => {
   console.log("a user connected id: ", socket.id);
 });
 
-// kafkaData();
-async function admin() {
-  const admin = kafka.admin()
-  const topic = await admin.listTopics()
-  console.log(topic)
-}
-admin()
+kafkaData();
 app.use("/:symbol", async (req, res) => {
   try {
     const { ohlc } = req.query;
