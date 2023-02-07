@@ -1,8 +1,8 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# Tạo máy ảo từ box centos/7, gán địa chỉ IP, đặt hostname, gán 2GB bộ nhớ, 2 cpus  
 Vagrant.configure("2") do |config|
+  config.ssh.insert_key=false
   config.vm.box = "centos/7"
   config.vm.network "private_network", ip: "172.16.10.100"
   config.vm.hostname = "master.xtl"
@@ -12,22 +12,43 @@ Vagrant.configure("2") do |config|
      vb.cpus = 2
      vb.memory = "2048"
   end
-  
-  # Chạy file install-docker-kube.sh sau khi nạp Box
   config.vm.provision "shell", path: "./../install-docker-kube.sh"
-
-  # Chạy các lệnh shell
   config.vm.provision "shell", inline: <<-SHELL
-    # Đặt pass 123 có tài khoản root và cho phép SSH
+  yes | yum install git
+  yum install wget -y
+  wget https://storage.googleapis.com/golang/getgo/installer_linux
+  chmod +x ./installer_linux
+  ./installer_linux
+  source ~/.bash_profile
+
+  git clone https://github.com/Mirantis/cri-dockerd.git
+  cd cri-dockerd
+  mkdir bin
+  VERSION=$((git describe --abbrev=0 --tags | sed -e 's/v//') || echo $(cat VERSION)-$(git log -1 --pretty='%h')) PRERELEASE=$(grep -q dev <<< "${VERSION}" && echo "pre" || echo "") REVISION=$(git log -1 --pretty='%h')
+  go build -ldflags="-X github.com/Mirantis/cri-dockerd/version.Version='$VERSION}' -X github.com/Mirantis/cri-dockerd/version.PreRelease='$PRERELEASE' -X github.com/Mirantis/cri-dockerd/version.BuildTime='$BUILD_DATE' -X github.com/Mirantis/cri-dockerd/version.GitCommit='$REVISION'" -o cri-dockerd
+  go build -o bin/cri-dockerd
+  mkdir -p /usr/local/bin
+  install -o root -g root -m 0755 bin/cri-dockerd /usr/local/bin/cri-dockerd
+  cp -a packaging/systemd/* /etc/systemd/system
+  sed -i -e 's,/usr/bin/cri-dockerd,/usr/local/bin/cri-dockerd,' /etc/systemd/system/cri-docker.service
+  systemctl daemon-reload
+  systemctl enable cri-docker.service
+  systemctl enable --now cri-docker.socket
+SHELL
+
+
+  config.vm.provision "shell", inline: <<-SHELL
+  
+    echo "root password"
     echo "123" | passwd --stdin root
     sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
     systemctl reload sshd
-# Ghi nội dung sau ra file /etc/hosts để truy cập được các máy theo HOSTNAME
+
+
 cat >>/etc/hosts<<EOF
 172.16.10.100 master.xtl
 172.16.10.101 worker1.xtl
 172.16.10.102 worker2.xtl
 EOF
-
   SHELL
 end

@@ -10,7 +10,7 @@ kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.5
 
 #Remove the taints on the master so that you can schedule pods on it.
 
-kubectl taint nodes --all node-role.kubernetes.io/control-plane- node-role.kubernetes.io/master-
+    kubectl taint nodes --all node-role.kubernetes.io/control-plane- node-role.kubernetes.io/master-
 
 #It should return the following.
 
@@ -55,8 +55,20 @@ kubeadm token create --print-join-command
 
 # node worker kết nối vào Cluster
 kubeadm join 172.16.10.100:6443 --token 5ajhhs.atikwelbpr0
+    +)discovery: have 2 schemas for discovery
+        +) shared token along with IP address  of the API server
+        +) Provide subset of standard config file
+    +)TLS bootstrap
 
 #deployment
 cd podConfigs
+
 kubectl apply -f zookeper.yaml
 kubectl apply -f kafka.yaml
+
+#forward port kubeneet
+kubectl port-forward mongo-75f59d57f4-4nd6q 28015:270
+
+#get docker shell
+docker exec -it <mycontainer> bash
+

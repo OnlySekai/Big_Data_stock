@@ -1,24 +1,43 @@
-const express = require("express");
-const  {subMinutes, subHours} = require('date-fns')
-const http = require("http");
-const app = express();
 require("dotenv").config();
-const { Client } = require("pg");
+const express = require("express");
+const cors = require("cors");
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+const http = require("http");
 const { Server } = require("socket.io");
-const client = new Client();
-const { Kafka } = require("kafkajs");
-const kafka = new Kafka({
-  brokers: ["localhost:29092"],
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+  },
 });
+
+const { Client } = require("pg");
+const client = new Client();
+client
+  .connect()
+  .then(() => console.log("databse connect success"))
+  .catch((err) => console.log(err.message));
+
+const { Kafka, } = require("kafkajs");
+const kafka = new Kafka({
+  brokers: [process.env.KAFKA_BROKER],
+});
+
+const  {subMinutes, subHours} = require('date-fns')
 
 const kafkaData = async () => {
   const consumerVisualize = kafka.consumer({ groupId: "viz" });
   const consumerDb = kafka.consumer({ groupId: "db" });
   await Promise.all([consumerDb.connect(), consumerVisualize.connect()]);
+
   await Promise.all([
     consumerDb.subscribe({ topics: ["stock"] }),
     consumerVisualize.subscribe({ topics: ["stock"] }),
   ]);
+  
   await Promise.all([
     consumerVisualize.run({
       eachMessage: async ({ topic, partition, message, heartbeat, pause }) => {
@@ -33,14 +52,16 @@ const kafkaData = async () => {
             value,
             headers: message.headers,
           });
-          if (key === "newPrice") {
-            io.emit("newPrice", value);
-          }
+          //TODO: xoa comment
+          // if (key === "newPrice") {
+          //   io.emit("newPrice", value);
+          // }
         } catch (err) {
           console.log("something wrong in socket");
         }
       },
     }),
+    
     consumerDb.run({
       eachMessage: async ({ topic, partition, message, heartbeat, pause }) => {
         try {
@@ -52,20 +73,21 @@ const kafkaData = async () => {
             value: message.value.toString(),
             headers: message.headers,
           });
-          const newPrice = JSON.parse(message.value.toString());
-          if (
-            message.key.toString() != "newPrice" ||
-            !newPrice.symbol ||
-            !newPrice.price ||
-            !newPrice.time
-          )
-            return;
-          const { time, price, symbol } = newPrice;
-          console.log(new Date(time).toISOString());
-          await client.query(
-            `insert into stocks_real_time(symbol, price, time)
-        	values ('${symbol}', ${price}, '${new Date(time).toISOString()}')`
-          );
+          //TODO: Xoa comment
+          // const newPrice = JSON.parse(message.value.toString());
+          // if (
+          //   message.key.toString() != "newPrice" ||
+          //   !newPrice.symbol ||
+          //   !newPrice.price ||
+          //   !newPrice.time
+          // )
+          //   return;
+          // const { time, price, symbol } = newPrice;
+          // console.log(new Date(time).toISOString());
+          // await client.query(
+          //   `insert into stocks_real_time(symbol, price, time)
+        	// values ('${symbol}', ${price}, '${new Date(time).toISOString()}')`
+          // );
         } catch (err) {
           console.log(err);
           console.log("something wrong in db");
@@ -74,19 +96,10 @@ const kafkaData = async () => {
     }),
   ]);
 };
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3000",
-  },
-});
-const cors = require("cors");
-app.use(express.json());
-app.use(cors());
-client
-  .connect()
-  .then(() => console.log("databse connect success"))
-  .catch((err) => console.log(err.message));
+
+
+
+
 // client.query("LISTEN new_stock_data");
 server.listen(8000, () => {
   console.log("listening on *:8000");
@@ -95,7 +108,13 @@ io.on("connection", (socket) => {
   console.log("a user connected id: ", socket.id);
 });
 
-kafkaData();
+// kafkaData();
+async function admin() {
+  const admin = kafka.admin()
+  const topic = await admin.listTopics()
+  console.log(topic)
+}
+admin()
 app.use("/:symbol", async (req, res) => {
   try {
     const { ohlc } = req.query;

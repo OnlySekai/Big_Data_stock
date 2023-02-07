@@ -8,7 +8,7 @@ matadata:
 spec:
   type: NodePort
   ports:
-    - name: zookeepr-pỏt
+      name: zookeeper-port
       port: 2181
       nodePort: 30181
       targetPort: 2181
@@ -23,7 +23,7 @@ metadata:
   name: zookeeper
   namespace: kafka
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: zookeeper
