@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: consumer
+  name: consumer
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consumer
+  template:
+    metadata:
+      labels:
+        app: consumer
+    spec:
+      containers:
+        - image: coverthe/producer:v0.0.1
+          name: consumer
+          env:
+            - name: KAFKA_BROKER
+              value: kafka-service:9092
+            - name: CORS
+              value: http://localhost:3000
+            - name: PGPORT
+              value: '5432'
+            - name: PGPASSWORD
+              value: '12345678'
+            - name: PGDATABASE
+              value: postgres
+            - name: PGUSER
+              value: postgres
+            - name: PGHOST
+              value: timescale.master.svc
+          ports:
+            - containerPort: 8000

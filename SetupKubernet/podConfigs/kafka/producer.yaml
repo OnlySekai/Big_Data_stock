@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: producer
+  name: producer
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: producer
+  template:
+    metadata:
+      labels:
+        app: producer
+    spec:
+      containers:
+        - image: coverthe/producer_test_1:v1.1.0
+          imagePullPolicy: Always
+          name: producer
+          env:
+            - name: BOOTSTRAP_SERVER
+              value: kafka-service:9092
+          ports:
+            - containerPort: 2002

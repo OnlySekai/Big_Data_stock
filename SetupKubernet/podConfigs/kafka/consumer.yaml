@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: consumer
+  name: consumer
+  namespace: kafka
+spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: consumer
+    template:
+      metadata:
+        labels:
+          app: consumer
+      spec:
+        containers:
+          - image: coverthe/consumer_test_1:latest
+            name: consumer
+            env:
+              - name: BOOTSTRAP_SERVER
+                value: kafka-service:9092
+            ports:
+              - containerPort: 2003
