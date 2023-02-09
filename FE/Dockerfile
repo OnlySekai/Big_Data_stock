@@ -6,6 +6,6 @@ COPY ./ ./
 
 RUN yarn
 
-CMD ["node", "index.js"]
+CMD ["yarn", "start"]
 
-EXPOSE 8000
+EXPOSE 3000

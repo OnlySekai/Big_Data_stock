@@ -2,8 +2,8 @@ const { Client } = require('pg')
 const client = new Client({
     user:'postgres',
     password:'12345678',
-    host:'localhost',
-    port: 5432,
+    host:'172.16.10.100',
+    port: 31001,
     database: 'postgres'
 })
 const {Kafka} = require('kafkajs')

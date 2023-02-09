@@ -12,31 +12,31 @@ spec:
       port: 5432
       nodePort: 31001
       targetPort: 5432
+  selector:
+    app: master-timescale
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: timescale
+    app: master-timescale
   name: master-timescale
   namespace: kafka
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: timescale
+      app: master-timescale
   template:
     metadata:
       labels:
-        app: timescale
+        app: master-timescale
     spec:
       hostname: timescale
       containers:
       - env:
         - name: POSTGRES_PASSWORD
           value: "12345678"
-        - name: POSTGRES_EXTRA_ARGS
-          value: "-c 'max_prepared_transactions=100' -c 'max_connections=100'"
         image: timescale/timescaledb-ha:pg14-latest
         imagePullPolicy: IfNotPresent
         name: timescale

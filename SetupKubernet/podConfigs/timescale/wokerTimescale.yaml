@@ -1,37 +1,36 @@
 apiVersion: v1
 kind: Service
 metadata:
-metadata:
   labels:
-    app: timescale-service
+    app: timescale-service-worker
   name: worker-timescale-service
-  namespace: timescale
+  namespace: kafka
 spec:
   type: NodePort
   ports:
     - name: timescale-port
       port: 5432
-      nodePort: 31001
+      nodePort: 31002
       targetPort: 5432
   selector:
-    app: timescale
+    app: worker-timescale
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: timescale
+    app: worker-timescale
   name: worker-timescale
-  namespace: timescale
+  namespace: kafka
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: timescale
+      app: worker-timescale
   template:
     metadata:
       labels:
-        app: timescale
+        app: worker-timescale
     spec:
       hostname: timescale
       containers:

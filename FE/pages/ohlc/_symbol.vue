@@ -30,18 +30,18 @@ export default {
   mounted() {
     const chart = this.$createChart(this.$refs.chart, this.options)
     chart.render()
-    this.interval = setInterval(async ()=> {
-      let { data } = await (
-      await fetch(`http://localhost:8000/${this.symbol}?ohlc=true`)
-    ).json()
-    data = data.map((value) => {
-      const { time, open, high, low, close } = value
-      return [new Date(time).valueOf(), open, high, low, close]
-    })
-    this.data = data
-    this.options.series = [{data: this.data}]
-    chart.updateOptions(this.options, false)
-    }, 300000)
+    // this.interval = setInterval(async ()=> {
+    //   let { data } = await (
+    //   await fetch(`backend/${this.symbol}?ohlc=true`)
+    // ).json()
+    // data = data.map((value) => {
+    //   const { time, open, high, low, close } = value
+    //   return [new Date(time).valueOf(), open, high, low, close]
+    // })
+    // this.data = data
+    // this.options.series = [{data: this.data}]
+    // chart.updateOptions(this.options, false)
+    // }, 300000)
   },
   beforeDestroy() {
     clearInterval(this.interval)

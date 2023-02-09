@@ -23,7 +23,7 @@ metadata:
   name: kafka
   namespace: kafka
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: kafka
@@ -41,7 +41,9 @@ spec:
           value: PLAINTEXT://:9092
         - name: KAFKA_ADVERTISED_LISTENERS
           value: PLAINTEXT://kafka-service:9092
-        image: wurstmeister/kafka
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: '1'
+        image: confluentinc/cp-kafka:latest
         imagePullPolicy: IfNotPresent
         name: kafka
         ports:

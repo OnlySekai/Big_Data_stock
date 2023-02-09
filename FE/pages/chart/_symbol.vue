@@ -11,7 +11,7 @@ export default {
     const time = []
     const prices = []
     const { data } = await (
-      await fetch(`http://localhost:8000/${params.symbol}?ohlc=false`)
+      await fetch(`backend/${params.symbol}?ohlc=false`)
     ).json()
     data.forEach((value) => {
       prices.push(value.price)

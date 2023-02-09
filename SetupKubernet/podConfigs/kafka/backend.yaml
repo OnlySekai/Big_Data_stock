@@ -1,28 +1,46 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: backend
+  name: backend
+  namespace: kafka
+spec:
+  type: NodePort
+  ports:
+    - name: backend-port
+      port: 8000
+      nodePort: 31008
+      targetPort: 8000
+  selector:
+    app: backend
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: consumer
-  name: consumer
+    app: backend
+  name: backend
   namespace: kafka
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: consumer
+      app: backend
   template:
     metadata:
       labels:
-        app: consumer
+        app: backend
     spec:
       containers:
-        - image: coverthe/producer:v0.0.1
-          name: consumer
+        - image: onlysekai/back-end-big-data:v1.0.2
+          imagePullPolicy: Always
+          name: backend
           env:
             - name: KAFKA_BROKER
               value: kafka-service:9092
             - name: CORS
-              value: http://localhost:3000
+              value: '*'
             - name: PGPORT
               value: '5432'
             - name: PGPASSWORD
@@ -32,6 +50,6 @@ spec:
             - name: PGUSER
               value: postgres
             - name: PGHOST
-              value: timescale.master.svc
+              value: master-timescale-service
           ports:
             - containerPort: 8000

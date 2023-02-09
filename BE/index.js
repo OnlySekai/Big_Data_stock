@@ -1,4 +1,4 @@
-// require("dotenv").config();
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const app = express();
@@ -19,6 +19,7 @@ const client = new Client();
 client
   .connect()
   .then(() => console.log("databse connect success"))
+  .then(() =>kafkaData())
   .catch((err) => console.log(err.message));
 
 const { Kafka, } = require("kafkajs");
@@ -29,10 +30,16 @@ const kafka = new Kafka({
 const  {subMinutes, subHours} = require('date-fns')
 
 const kafkaData = async () => {
+  console.log('in')
+  const admin =kafka.admin()
+  await admin.connect()
+  await admin.createTopics({
+    topics: [{topic: 'stock'}]
+  })
+  console.log(await admin.listTopics())
   const consumerVisualize = kafka.consumer({ groupId: "viz" });
   const consumerDb = kafka.consumer({ groupId: "db" });
   await Promise.all([consumerDb.connect(), consumerVisualize.connect()]);
-
   await Promise.all([
     consumerDb.subscribe({ topics: ["stock"] }),
     consumerVisualize.subscribe({ topics: ["stock"] }),
@@ -44,14 +51,6 @@ const kafkaData = async () => {
         const key = message.key.toString();
         try {
           const value = JSON.parse(message.value.toString());
-          console.log({
-            topic,
-            type: "socket",
-            partition,
-            key,
-            value,
-            headers: message.headers,
-          });
           if (key === "newPrice") {
             io.emit("newPrice", value);
           }
@@ -64,14 +63,6 @@ const kafkaData = async () => {
     consumerDb.run({
       eachMessage: async ({ topic, partition, message, heartbeat, pause }) => {
         try {
-          console.log({
-            topic,
-            type: "db",
-            partition,
-            key: message.key.toString(),
-            value: message.value.toString(),
-            headers: message.headers,
-          });
           const newPrice = JSON.parse(message.value.toString());
           if (
             message.key.toString() != "newPrice" ||
@@ -81,13 +72,13 @@ const kafkaData = async () => {
           )
             return;
           const { time, price, symbol } = newPrice;
-          console.log(new Date(time).toISOString());
+          console.log(newPrice)
           await client.query(
             `insert into stocks_real_time(symbol, price, time)
         	values ('${symbol}', ${price}, '${new Date(time).toISOString()}')`
           );
         } catch (err) {
-          console.log(err);
+          console.log(err)
           console.log("something wrong in db");
         }
       },
@@ -106,7 +97,7 @@ io.on("connection", (socket) => {
   console.log("a user connected id: ", socket.id);
 });
 
-kafkaData();
+
 app.use("/:symbol", async (req, res) => {
   try {
     const { ohlc } = req.query;
@@ -144,12 +135,13 @@ app.use("/:symbol", async (req, res) => {
       console.log(rows)
       return res.json({data: rows})
     }
+    console.log('123')
     client.query(queryRealTime).then((rs) => {
       console.log(rs.rows);
       return res.status(200).json({ data: rs.rows });
     });
   } catch (err) {
-    console.log(err);
-    res.status(500).send();
+    console.log('loi')
+    res.status(500).send(err);
   }
 });

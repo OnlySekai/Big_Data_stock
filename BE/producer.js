@@ -2,12 +2,12 @@ const {Kafka} = require('kafkajs')
 
 
 const kafka = new Kafka({
-  brokers: ['localhost:9092'],
+  brokers: ['localhost:29092'],
 })
 
 const fakeData = {
   symbol: "AMZN",
-  price: 50,
+  price: 90,
   time: Date.now(),
 }
 
