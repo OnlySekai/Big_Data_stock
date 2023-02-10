@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: fontend
+  name: fontend
+  namespace: kafka
+spec:
+  type: NodePort
+  ports:
+    - name: fontend-port
+      port: 3000
+      nodePort: 31003
+      targetPort: 3000
+  selector:
+    app: fontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: fontend
+  name: fontend
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fontend
+  template:
+    metadata:
+      labels:
+        app: fontend
+    spec:
+      containers:
+        - image: onlysekai/fe-big-data:latest
+          imagePullPolicy: Always
+          name: fontend
+          ports:
+            - containerPort: 3000

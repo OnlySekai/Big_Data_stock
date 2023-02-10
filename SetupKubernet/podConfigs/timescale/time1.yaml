@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: time1
+    ungdung: ungdung1
+  name: time3
+spec:
+  containers:
+  - env:
+    - name: POSTGRES_PASSWORD
+      value: "12345678"
+    image: timescale/timescaledb-ha:pg14.6-compiler
+    imagePullPolicy: IfNotPresent
+    name: timescale
+    ports:
+    - containerPort: 5432

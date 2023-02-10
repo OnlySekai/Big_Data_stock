@@ -1,0 +1,74 @@
+# khởi tạo một Cluster
+kubeadm init --apiserver-advertise-address=172.16.10.100 --pod-network-cidr=192.168.0.0/16
+
+# Install the Tigera Calico operator and custom resource definitions.
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.5/manifests/tigera-operator.yaml
+
+#Install Calico by creating the necessary custom resource. For more information on configuration options available in this manifest, see the installation reference.
+
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.5/manifests/custom-resources.yaml
+
+#Remove the taints on the master so that you can schedule pods on it.
+
+    kubectl taint nodes --all node-role.kubernetes.io/control-plane- node-role.kubernetes.io/master-
+
+#It should return the following.
+
+node/<your-hostname> untainted
+
+#Confirm that you now have a node in your cluster with the following command.
+
+kubectl get nodes -o wide
+
+#Confirm that all of the pods are running with the following command.
+
+watch kubectl get pods -n calico-system
+
+# Thông tin cluster
+kubectl cluster-info
+
+# Các node (máy) trong cluster
+kubectl get nodes
+
+# Các pod (chứa container) đang chạy trong tất cả các namespace
+kubectl get pods -A
+
+# Xem nội dung cấu hình hiện tại của kubectl
+kubectl config view
+
+# Thiết lập file cấu hình kubectl sử dụng cho 1 phiên làm việc hiện tại của termianl
+export KUBECONFIG=/Users/xuanthulab/.kube/config-mycluster
+
+# Gộp file cấu hình kubectl
+export KUBECONFIG=~/.kube/config:~/.kube/config-mycluster
+kubectl config view --flatten > ~/.kube/config_temp
+mv ~/.kube/config_temp ~/.kube/config
+
+# Các ngữ cảnh hiện có trong config
+kubectl config get-contexts
+
+# Đổi ngữ cảnh làm việc (kết nối đến cluster nào)
+kubectl config use-context kubernetes-admin@kubernetes
+
+# Lấy mã kết nối vào Cluster
+kubeadm token create --print-join-command
+
+# node worker kết nối vào Cluster
+kubeadm join 172.16.10.100:6443 --token 5ajhhs.atikwelbpr0
+    +)discovery: have 2 schemas for discovery
+        +) shared token along with IP address  of the API server
+        +) Provide subset of standard config file
+    +)TLS bootstrap
+
+#deployment
+cd podConfigs
+
+kubectl apply -f zookeper.yaml
+kubectl apply -f kafka.yaml
+
+#forward port kubeneet
+kubectl port-forward mongo-75f59d57f4-4nd6q 28015:270
+
+#get docker shell
+docker exec -it <mycontainer> bash
+
