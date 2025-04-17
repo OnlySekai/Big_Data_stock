@@ -1,41 +1,6 @@
 #!/bin/bash
 
-# Cập nhật 12/2019
-
-# Cai dat Docker
-yum install -y yum-utils device-mapper-persistent-data lvm2
-yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-yum update -y && yum install docker-ce-18.06.2.ce -y
-usermod -aG docker $(whoami)
-yum install wget
-
-## Create /etc/docker directory.
-mkdir /etc/docker
-
-# Setup daemon.
-cat > /etc/docker/daemon.json <<EOF
-{
-  "exec-opts": ["native.cgroupdriver=systemd"],
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "100m"
-  },
-  "storage-driver": "overlay2",
-  "storage-opts": [
-    "overlay2.override_kernel_check=true"
-  ]
-}
-EOF
-
-mkdir -p /etc/systemd/system/docker.service.d
-
-
-# Restart Docker
-systemctl enable docker.service
-systemctl daemon-reload
-systemctl restart docker
-
-
+# Cập nhật 04/2025
 # Tat SELinux
 setenforce 0
 sed -i --follow-symlinks 's/^SELINUX=enforcing/SELINUX=disabled/' /etc/sysconfig/selinux
@@ -48,6 +13,7 @@ systemctl stop firewalld
 cat >>/etc/sysctl.d/kubernetes.conf<<EOF
 net.bridge.bridge-nf-call-ip6tables = 1
 net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
 EOF
 sysctl --system >/dev/null 2>&1
 
@@ -56,21 +22,22 @@ sed -i '/swap/d' /etc/fstab
 swapoff -a
 
 # Add yum repo file for Kubernetes
-cat >>/etc/yum.repos.d/kubernetes.repo<<EOF
+cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
-baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+baseurl=https://pkgs.k8s.io/core:/stable:/v1.31/rpm/
 enabled=1
 gpgcheck=1
-repo_gpgcheck=1
-gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+gpgkey=https://pkgs.k8s.io/core:/stable:/v1.31/rpm/repodata/repomd.xml.key
 EOF
+sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+dnf install -y kubelet kubeadm kubectl containerd
+systemctl enable --now kubelet
+containerd config default > /etc/containerd/config.toml
+sudo sed -i 's|sandbox_image = ".*"|sandbox_image = "registry.k8s.io/pause:3.10"|' /etc/containerd/config.toml
 
-yum install -y -q kubeadm kubelet kubectl
-
-systemctl enable kubelet
-systemctl start kubelet
-
+systemctl restart containerd
+sudo systemctl restart kubelet
 # Configure NetworkManager before attempting to use Calico networking.
 cat >>/etc/NetworkManager/conf.d/calico.conf<<EOF
 [keyfile]
