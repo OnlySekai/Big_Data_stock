@@ -21,25 +21,36 @@ sysctl --system >/dev/null 2>&1
 sed -i '/swap/d' /etc/fstab
 swapoff -a
 
+KUBERNETES_VERSION=v1.32
+CRIO_VERSION=v1.32
 # Add yum repo file for Kubernetes
-cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+cat <<EOF | tee /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
-baseurl=https://pkgs.k8s.io/core:/stable:/v1.31/rpm/
+baseurl=https://pkgs.k8s.io/core:/stable:/$KUBERNETES_VERSION/rpm/
 enabled=1
 gpgcheck=1
-gpgkey=https://pkgs.k8s.io/core:/stable:/v1.31/rpm/repodata/repomd.xml.key
+gpgkey=https://pkgs.k8s.io/core:/stable:/$KUBERNETES_VERSION/rpm/repodata/repomd.xml.key
 EOF
-sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-dnf install -y kubelet kubeadm kubectl containerd
-systemctl enable --now kubelet
-containerd config default > /etc/containerd/config.toml
-sudo sed -i 's|sandbox_image = ".*"|sandbox_image = "registry.k8s.io/pause:3.10"|' /etc/containerd/config.toml
+#Add the CRI-O repository
+cat <<EOF | tee /etc/yum.repos.d/cri-o.repo
+[cri-o]
+name=CRI-O
+baseurl=https://download.opensuse.org/repositories/isv:/cri-o:/stable:/$CRIO_VERSION/rpm/
+enabled=1
+gpgcheck=1
+gpgkey=https://download.opensuse.org/repositories/isv:/cri-o:/stable:/$CRIO_VERSION/rpm/repodata/repomd.xml.key
+EOF
 
-systemctl restart containerd
-sudo systemctl restart kubelet
+dnf install -y container-selinux
+dnf install -y cri-o kubelet kubeadm kubectl
+mv /etc/cni/net.d/10-crio-bridge.conflist.disabled /etc/cni/net.d/10-crio-bridge.conflist
+
+systemctl enable --now crio.service
+systemctl enable --now kubelet
 # Configure NetworkManager before attempting to use Calico networking.
 cat >>/etc/NetworkManager/conf.d/calico.conf<<EOF
 [keyfile]
 unmanaged-devices=interface-name:cali*;interface-name:tunl*
 EOF
+
